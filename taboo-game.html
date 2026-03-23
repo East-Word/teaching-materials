@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WORD TABOO – English Class Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --card: #13131a;
+    --accent: #f5c842;
+    --danger: #ff3b3b;
+    --safe: #3bff8a;
+    --pause: #7b8cff;
+    --text: #f0ede6;
+    --muted: #555;
+    --border: #222230;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 28px; border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .logo { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; letter-spacing:4px; color:var(--accent); }
+  .header-right { display:flex; gap:10px; align-items:center; }
+
+  .btn {
+    padding:8px 18px; border-radius:7px;
+    font-family:'DM Sans',sans-serif; font-size:0.82rem; font-weight:600;
+    cursor:pointer; border:none; transition:all 0.15s;
+  }
+  .btn-accent { background:var(--accent); color:#000; }
+  .btn-accent:hover { background:#e0b430; }
+  .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .btn-ghost:hover { color:var(--text); border-color:#444; }
+  .btn-danger { background:transparent; color:var(--danger); border:1px solid rgba(255,59,59,0.4); }
+  .btn-danger:hover { background:rgba(255,59,59,0.1); }
+
+  label.upload-btn {
+    background:var(--border); color:var(--text);
+    padding:8px 16px; border-radius:7px; font-size:0.82rem; font-weight:600;
+    cursor:pointer; border:1px solid #333; transition:background 0.2s; white-space:nowrap;
+  }
+  label.upload-btn:hover { background:#2a2a3a; }
+  #csv-input { display:none; }
+
+  /* ════════════════════════
+     SETUP SCREEN
+  ════════════════════════ */
+  #setup-screen {
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:32px 20px;
+  }
+  .big-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(3rem,9vw,6rem); letter-spacing:6px; color:var(--accent); margin-bottom:4px;
+  }
+  .subtitle { color:var(--muted); font-size:0.9rem; margin-bottom:28px; }
+
+  .setup-box {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:16px; padding:28px; max-width:620px; width:100%;
+  }
+  .setup-cols { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  @media(max-width:560px){ .setup-cols { grid-template-columns:1fr; } }
+
+  .setup-section { margin-bottom:20px; }
+  .setup-label {
+    font-size:0.68rem; letter-spacing:2px; text-transform:uppercase;
+    color:var(--muted); margin-bottom:10px; display:block;
+  }
+  .csv-format {
+    background:#0d0d14; border:1px solid var(--border); border-radius:8px;
+    padding:12px; font-family:monospace; font-size:0.75rem;
+    color:#888; line-height:1.8; margin-bottom:10px;
+  }
+  .csv-format span { color:var(--accent); }
+  #word-count { font-size:0.78rem; color:var(--muted); margin-top:6px; }
+  #word-count b { color:var(--accent); }
+
+  .timer-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .timer-row label { font-size:0.85rem; color:var(--text); white-space:nowrap; }
+  .timer-row input[type=range] { flex:1; accent-color:var(--accent); min-width:100px; }
+  #timer-display {
+    font-family:'Bebas Neue',sans-serif; font-size:1.8rem;
+    color:var(--accent); min-width:50px; text-align:right; letter-spacing:2px;
+  }
+
+  .manual-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:8px;
+  }
+  .manual-grid input {
+    background:#0d0d14; border:1px solid var(--border); border-radius:7px;
+    padding:8px 11px; color:var(--text); font-family:'DM Sans',sans-serif;
+    font-size:0.83rem; outline:none; transition:border-color 0.2s;
+  }
+  .manual-grid input:focus { border-color:var(--accent); }
+  .manual-grid input::placeholder { color:#333; }
+
+  .divider {
+    text-align:center; color:var(--muted); font-size:0.7rem; margin:14px 0; position:relative;
+  }
+  .divider::before,.divider::after {
+    content:''; position:absolute; top:50%; width:38%; height:1px; background:var(--border);
+  }
+  .divider::before { left:0; } .divider::after { right:0; }
+
+  /* ── Key Guide ── */
+  .key-guide {
+    background:#0d0d14; border:1px solid var(--border);
+    border-radius:12px; padding:16px 18px;
+  }
+  .key-guide-title {
+    font-size:0.68rem; letter-spacing:2px; text-transform:uppercase;
+    color:var(--muted); margin-bottom:12px;
+  }
+  .key-row {
+    display:flex; align-items:center; gap:10px; margin-bottom:9px;
+  }
+  .key-row:last-child { margin-bottom:0; }
+  .key {
+    display:inline-flex; align-items:center; justify-content:center;
+    background:#1a1a28; border:1px solid #333; border-bottom:2px solid #444;
+    border-radius:5px; padding:3px 9px; font-family:monospace;
+    font-size:0.75rem; color:var(--accent); white-space:nowrap; min-width:44px;
+  }
+  .key-desc { font-size:0.82rem; color:#aaa; }
+  .key-color-green { color: var(--safe); }
+  .key-color-gray  { color: var(--muted); }
+  .key-color-blue  { color: var(--pause); }
+  .key-color-red   { color: var(--danger); }
+
+  /* ════════════════════════
+     GAME SCREEN
+  ════════════════════════ */
+  #game-screen { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  .progress-bar { width:100%; height:3px; background:var(--border); flex-shrink:0; }
+  .progress-fill { height:100%; background:var(--accent); transition:width 0.4s ease; }
+
+  .game-topbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 22px; border-bottom:1px solid var(--border); flex-shrink:0; gap:10px;
+  }
+  .topbar-left { display:flex; gap:8px; align-items:center; }
+  .card-counter { font-size:0.78rem; color:var(--muted); letter-spacing:1px; }
+
+  /* Timer ring */
+  .timer-ring-wrap { position:relative; width:64px; height:64px; }
+  .timer-ring-wrap svg { transform:rotate(-90deg); width:64px; height:64px; }
+  .ring-bg { fill:none; stroke:var(--border); stroke-width:5; }
+  .ring-fg {
+    fill:none; stroke:var(--accent); stroke-width:5; stroke-linecap:round;
+    stroke-dasharray:163; stroke-dashoffset:0;
+    transition:stroke-dashoffset 1s linear, stroke 0.3s;
+  }
+  .timer-number {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Bebas Neue',sans-serif; font-size:1.3rem; letter-spacing:1px;
+  }
+
+  .bgm-toggle {
+    background:transparent; border:1px solid var(--border);
+    color:var(--muted); padding:6px 13px; border-radius:6px;
+    font-size:0.75rem; cursor:pointer; transition:all 0.2s;
+  }
+  .bgm-toggle.on { border-color:var(--accent); color:var(--accent); }
+
+  /* Game body */
+  .game-body {
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding:14px 24px 6px; overflow:hidden;
+  }
+  .answer-label-top {
+    font-size:0.68rem; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;
+  }
+  .answer-word {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(5rem,17vw,13rem); letter-spacing:4px; line-height:0.9;
+    color:#fff; text-align:center;
+    text-shadow:0 0 80px rgba(245,200,66,0.12);
+    animation:wordIn 0.4s cubic-bezier(0.16,1,0.3,1);
+  }
+  .answer-ja {
+    font-size:clamp(2rem,5.5vw,4rem); font-weight:700; color:var(--accent);
+    margin-top:8px; text-align:center; letter-spacing:3px;
+    animation:wordIn 0.45s cubic-bezier(0.16,1,0.3,1) 0.05s both;
+  }
+  .illus-emoji {
+    font-size:clamp(2.5rem,6vw,5rem); margin:10px 0 4px; line-height:1;
+    animation:wordIn 0.45s cubic-bezier(0.16,1,0.3,1) 0.08s both;
+  }
+  @keyframes wordIn {
+    from { opacity:0; transform:scale(0.82) translateY(14px); }
+    to   { opacity:1; transform:scale(1) translateY(0); }
+  }
+
+  /* Taboo */
+  .taboo-section {
+    width:100%; max-width:860px;
+    background:rgba(255,59,59,0.06); border:1.5px solid rgba(255,59,59,0.25);
+    border-radius:14px; padding:12px 22px; margin-top:14px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:center;
+    animation:wordIn 0.5s cubic-bezier(0.16,1,0.3,1) 0.12s both; flex-shrink:0;
+  }
+  .taboo-label {
+    font-size:0.63rem; letter-spacing:3px; text-transform:uppercase; color:var(--danger);
+    display:flex; align-items:center; gap:5px; flex-shrink:0;
+  }
+  .taboo-label::before {
+    content:'✕'; font-size:0.58rem; background:var(--danger); color:#000;
+    width:14px; height:14px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .taboo-words { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .taboo-tag {
+    background:rgba(255,59,59,0.12); border:2px solid rgba(255,59,59,0.5);
+    color:#ff7070; padding:9px 26px; border-radius:8px; font-weight:700;
+    font-size:clamp(1.1rem,3vw,1.8rem); letter-spacing:2px;
+    text-decoration:line-through; text-decoration-color:rgba(255,80,80,0.7);
+    text-decoration-thickness:2px;
+  }
+
+  /* Actions */
+  .action-row {
+    display:flex; gap:10px; padding:10px 22px 16px;
+    justify-content:center; flex-wrap:wrap; flex-shrink:0;
+  }
+  .btn-next {
+    background:var(--safe); color:#000; border:none;
+    padding:14px 46px; border-radius:12px;
+    font-family:'Bebas Neue',sans-serif; font-size:1.45rem; letter-spacing:3px;
+    cursor:pointer; transition:all 0.15s;
+    box-shadow:0 4px 22px rgba(59,255,138,0.2);
+  }
+  .btn-next:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(59,255,138,0.35); }
+  .btn-skip {
+    background:transparent; color:var(--muted); border:1px solid var(--border);
+    padding:14px 26px; border-radius:12px; font-size:0.88rem; cursor:pointer; transition:all 0.15s;
+  }
+  .btn-skip:hover { color:var(--text); border-color:#555; }
+  .btn-end-game {
+    background:transparent; color:var(--danger);
+    border:1px solid rgba(255,59,59,0.35);
+    padding:14px 22px; border-radius:12px; font-size:0.82rem;
+    cursor:pointer; transition:all 0.15s;
+  }
+  .btn-end-game:hover { background:rgba(255,59,59,0.08); border-color:var(--danger); }
+
+  /* ════════════════════════
+     PAUSE OVERLAY
+  ════════════════════════ */
+  #pause-overlay {
+    display:none; position:fixed; inset:0;
+    background:rgba(10,10,20,0.88);
+    backdrop-filter:blur(8px); z-index:60;
+    flex-direction:column; align-items:center; justify-content:center; gap:24px;
+  }
+  .pause-icon { font-size:4rem; }
+  .pause-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(4rem,12vw,7rem); letter-spacing:6px; color:var(--pause);
+  }
+  .pause-hint { color:var(--muted); font-size:0.9rem; letter-spacing:1px; }
+  .pause-btns { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
+  .btn-resume {
+    background:var(--pause); color:#000; border:none;
+    padding:14px 44px; border-radius:10px;
+    font-family:'Bebas Neue',sans-serif; font-size:1.4rem; letter-spacing:2px; cursor:pointer;
+    transition:all 0.15s;
+  }
+  .btn-resume:hover { opacity:0.85; transform:translateY(-1px); }
+
+  /* ════════════════════════
+     TIME UP OVERLAY
+  ════════════════════════ */
+  #time-overlay {
+    display:none; position:fixed; inset:0;
+    background:rgba(255,40,40,0.16);
+    backdrop-filter:blur(3px); z-index:55;
+    flex-direction:column; align-items:center; justify-content:center; gap:20px;
+  }
+  .overlay-icon { font-size:5.5rem; }
+  .overlay-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(4rem,12vw,7rem); color:var(--danger); letter-spacing:4px;
+    animation:shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-14px)} 40%,80%{transform:translateX(14px)}
+  }
+  .btn-next-ov {
+    background:var(--accent); color:#000; border:none;
+    padding:14px 44px; border-radius:10px;
+    font-family:'Bebas Neue',sans-serif; font-size:1.35rem; letter-spacing:2px; cursor:pointer;
+  }
+
+  /* ════════════════════════
+     FINISH SCREEN
+  ════════════════════════ */
+  #finish-screen {
+    display:none; flex:1; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:0; text-align:center; padding:40px 24px;
+  }
+  .finish-icon { font-size:4.5rem; margin-bottom:10px; }
+  .finish-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(3rem,7vw,4.5rem); letter-spacing:4px; color:var(--accent);
+    margin-bottom:28px;
+  }
+
+  /* BIG SCORE */
+  .score-block {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:20px; padding:32px 56px; margin-bottom:28px;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .score-label {
+    font-size:0.72rem; letter-spacing:3px; text-transform:uppercase; color:var(--muted);
+  }
+  .score-numbers {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(5rem,18vw,10rem); line-height:0.9; letter-spacing:4px; color:#fff;
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .score-correct { color:var(--safe); }
+  .score-slash { color:var(--muted); font-size:0.6em; }
+  .score-total { color:var(--text); }
+  .score-pct {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:clamp(2rem,5vw,3.5rem); color:var(--accent); letter-spacing:3px; margin-top:4px;
+  }
+  .score-msg { color:var(--muted); font-size:0.95rem; margin-top:6px; }
+
+  .finish-btns { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+
+  /* Toast */
+  #toast {
+    position:fixed; bottom:22px; left:50%;
+    transform:translateX(-50%) translateY(60px);
+    background:#222; color:var(--text); padding:10px 22px;
+    border-radius:8px; font-size:0.82rem; border:1px solid var(--border);
+    transition:transform 0.3s; pointer-events:none; z-index:200;
+  }
+  #toast.show { transform:translateX(-50%) translateY(0); }
+
+  @keyframes pulse-danger {
+    0%,100%{transform:scale(1)} 50%{transform:scale(1.1)}
+  }
+  .pulse-danger { animation:pulse-danger 0.5s ease infinite; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">WORD TABOO</div>
+  <div class="header-right">
+    <label class="upload-btn" for="csv-input">📂 CSV</label>
+    <input type="file" id="csv-input" accept=".csv,.txt">
+    <button class="btn btn-ghost" id="restart-btn" style="display:none" onclick="goSetup()">← 設定</button>
+    <button class="bgm-toggle" id="bgm-btn-header" style="display:none" onclick="toggleBGM()">♪ BGM OFF</button>
+  </div>
+</header>
+
+<!-- ════ SETUP ════ -->
+<div id="setup-screen">
+  <div class="big-title">WORD TABOO</div>
+  <div class="subtitle">英語授業ゲーム — ヒントを出して単語を当てろ！</div>
+
+  <div class="setup-box">
+    <div class="setup-cols">
+      <!-- LEFT -->
+      <div>
+        <div class="setup-section">
+          <span class="setup-label">📄 単語データ（CSV）</span>
+          <div class="csv-format">
+<span>答え,禁止ワード1,禁止ワード2,日本語訳</span><br>
+winter,snow,cold,冬<br>
+beach,sea,sand,砂浜
+          </div>
+          <label class="upload-btn" for="csv-input" style="display:inline-block">📂 CSVを読み込む</label>
+          <div id="word-count" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="setup-section">
+          <span class="setup-label">⏱ 制限時間（5〜60秒）</span>
+          <div class="timer-row">
+            <label>時間</label>
+            <input type="range" id="timer-range" min="5" max="60" value="30" oninput="updateTimerDisplay()">
+            <div id="timer-display">30秒</div>
+          </div>
+        </div>
+
+        <div class="setup-section">
+          <span class="setup-label">🎵 BGM</span>
+          <button class="bgm-toggle" id="bgm-setup-btn" onclick="toggleBGMSetup()"
+            style="width:100%; padding:10px; font-size:0.83rem;">
+            ♪ BGM: OFF（クリックでON）
+          </button>
+        </div>
+
+        <div class="divider">手動で追加</div>
+        <div class="setup-section">
+          <div class="manual-grid">
+            <input type="text" id="m-answer" placeholder="答え (例: winter)">
+            <input type="text" id="m-ja"     placeholder="日本語訳 (例: 冬)">
+            <input type="text" id="m-taboo1" placeholder="禁止ワード1">
+            <input type="text" id="m-taboo2" placeholder="禁止ワード2">
+          </div>
+          <button class="btn btn-ghost" onclick="addManual()" style="width:100%; margin-bottom:0">＋ 追加</button>
+        </div>
+
+        <button class="btn btn-accent" onclick="startGame()"
+          style="width:100%; padding:13px; font-size:1rem; border-radius:10px; margin-top:6px;">
+          ゲームスタート →
+        </button>
+      </div>
+
+      <!-- RIGHT: Key Guide -->
+      <div>
+        <span class="setup-label" style="display:block; margin-bottom:10px;">⌨️ キーボード操作</span>
+        <div class="key-guide">
+          <div class="key-guide-title">ゲーム中のキー操作</div>
+
+          <div class="key-row">
+            <span class="key">→</span><span class="key">Enter</span>
+            <span class="key-desc key-color-green">✓ 正解</span>
+          </div>
+          <div class="key-row">
+            <span class="key">←</span><span class="key">Backspace</span>
+            <span class="key-desc key-color-gray">⏭ スキップ</span>
+          </div>
+          <div class="key-row">
+            <span class="key">Space</span>
+            <span class="key-desc key-color-blue">⏸ ポーズ / 再開</span>
+          </div>
+          <div class="key-row">
+            <span class="key">Esc</span>
+            <span class="key-desc key-color-red">⏹ ゲーム終了</span>
+          </div>
+
+          <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+            <div class="key-guide-title" style="margin-bottom:10px;">ポーズ中</div>
+            <div class="key-row">
+              <span class="key">Space</span>
+              <span class="key-desc key-color-blue">▶ 再開</span>
+            </div>
+            <div class="key-row">
+              <span class="key">Esc</span>
+              <span class="key-desc key-color-red">⏹ 終了</span>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);
+            font-size:0.75rem; color:var(--muted); line-height:1.7;">
+            💡 ボタンでの操作も同様に動作します。<br>
+            タイムアップ → 自動でスキップ扱い。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ GAME ════ -->
+<div id="game-screen">
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+  <div class="game-topbar">
+    <div class="topbar-left">
+      <span class="card-counter" id="card-counter">1 / 10</span>
+      <button class="btn-end-game" onclick="endGame()" title="ESCでも終了できます">⏹ 終了</button>
+    </div>
+
+    <div class="timer-ring-wrap" id="timer-ring-wrap">
+      <svg viewBox="0 0 64 64">
+        <circle class="ring-bg" cx="32" cy="32" r="26"/>
+        <circle class="ring-fg" id="ring-fg" cx="32" cy="32" r="26"/>
+      </svg>
+      <div class="timer-number" id="timer-number">30</div>
+    </div>
+
+    <button class="bgm-toggle" id="bgm-btn-game" onclick="toggleBGM()">♪ BGM OFF</button>
+  </div>
+
+  <div class="game-body">
+    <div class="answer-label-top">ANSWER WORD</div>
+    <div class="answer-word" id="answer-word">WINTER</div>
+    <div class="answer-ja"   id="answer-ja">冬</div>
+    <div class="illus-emoji" id="illus-emoji">❄️</div>
+
+    <div class="taboo-section">
+      <div class="taboo-label">TABOO — 使ってはいけない</div>
+      <div class="taboo-words" id="taboo-words"></div>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <button class="btn-skip" onclick="nextCard(false)">⏭ Skip　<small style="opacity:.5">← / BS</small></button>
+    <button class="btn-next" onclick="nextCard(true)">✓ CORRECT　<small style="font-size:0.7em; opacity:.6">→ / Enter</small></button>
+    <button class="btn-skip" onclick="togglePause()" style="border-color:rgba(123,140,255,0.4); color:var(--pause);">
+      ⏸ Pause　<small style="opacity:.5">Space</small>
+    </button>
+  </div>
+</div>
+
+<!-- PAUSE OVERLAY -->
+<div id="pause-overlay">
+  <div class="pause-icon">⏸</div>
+  <div class="pause-title">PAUSED</div>
+  <div class="pause-hint">Space キーで再開 / Esc で終了</div>
+  <div class="pause-btns">
+    <button class="btn-resume" onclick="togglePause()">▶ RESUME</button>
+    <button class="btn btn-danger" onclick="endGame()" style="padding:14px 28px; font-size:0.9rem;">⏹ ゲームを終了</button>
+  </div>
+</div>
+
+<!-- TIME UP -->
+<div id="time-overlay">
+  <div class="overlay-icon">⏰</div>
+  <div class="overlay-title">TIME UP!</div>
+  <button class="btn-next-ov" onclick="dismissTimeUp()">次のカードへ →</button>
+</div>
+
+<!-- ════ FINISH ════ -->
+<div id="finish-screen">
+  <div class="finish-icon">🎉</div>
+  <div class="finish-title" id="finish-title">GAME OVER!</div>
+
+  <div class="score-block">
+    <div class="score-label">RESULT</div>
+    <div class="score-numbers">
+      <span class="score-correct" id="score-correct">3</span>
+      <span class="score-slash">/</span>
+      <span class="score-total"  id="score-total">5</span>
+    </div>
+    <div class="score-pct" id="score-pct">60%</div>
+    <div class="score-msg" id="score-msg">問中 正解！</div>
+  </div>
+
+  <div class="finish-btns">
+    <button class="btn btn-accent" onclick="restartGame()">もう一度</button>
+    <button class="btn btn-ghost"  onclick="goSetup()">設定に戻る</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Emoji map ──
+const emojiMap={winter:'❄️',summer:'☀️',spring:'🌸',autumn:'🍂',fall:'🍂',beach:'🏖️',ocean:'🌊',sea:'🌊',river:'🏞️',mountain:'⛰️',library:'📚',book:'📖',school:'🏫',teacher:'👩‍🏫',student:'🎒',dog:'🐕',cat:'🐈',bird:'🐦',fish:'🐟',horse:'🐴',rabbit:'🐰',apple:'🍎',banana:'🍌',orange:'🍊',strawberry:'🍓',grape:'🍇',pizza:'🍕',hamburger:'🍔',sushi:'🍣',cake:'🎂',ice:'🧊',car:'🚗',train:'🚆',plane:'✈️',boat:'⛵',bicycle:'🚲',house:'🏠',city:'🌆',park:'🌳',garden:'🌻',forest:'🌲',sun:'☀️',moon:'🌙',star:'⭐',rain:'🌧️',snow:'❄️',wind:'💨',music:'🎵',dance:'💃',sport:'⚽',game:'🎮',art:'🎨',water:'💧',fire:'🔥',earth:'🌍',sky:'🌤️',happy:'😊',sad:'😢',angry:'😠',love:'❤️',morning:'🌅',night:'🌃',day:'🌞',money:'💰',shop:'🛍️',food:'🍽️',doctor:'👨‍⚕️',hospital:'🏥',medicine:'💊',computer:'💻',phone:'📱',camera:'📷',king:'👑',queen:'👸',castle:'🏰',sword:'⚔️',sleep:'😴',run:'🏃',jump:'🦘',swim:'🏊',flower:'🌸',tree:'🌲',leaf:'🍃'};
+const getEmoji=w=>emojiMap[w.toLowerCase()]||'🔤';
+
+// ── State ──
+let words=[
+  {answer:'winter',taboo1:'snow',taboo2:'cold',ja:'冬'},
+  {answer:'beach',taboo1:'sea',taboo2:'sand',ja:'砂浜'},
+  {answer:'library',taboo1:'book',taboo2:'read',ja:'図書館'},
+  {answer:'apple',taboo1:'fruit',taboo2:'red',ja:'りんご'},
+  {answer:'doctor',taboo1:'sick',taboo2:'hospital',ja:'医者'},
+];
+let shuffled=[],current=0,correct=0;
+let isPaused=false;
+
+// ── Timer ──
+const CIRC=2*Math.PI*26;
+let timerSec=30,timerLeft=30,timerInterval=null;
+
+function updateTimerDisplay(){
+  timerSec=parseInt(document.getElementById('timer-range').value);
+  document.getElementById('timer-display').textContent=timerSec+'秒';
+}
+function startTimer(){
+  clearInterval(timerInterval);
+  timerLeft=timerSec; renderRing();
+  timerInterval=setInterval(()=>{
+    if(isPaused) return;
+    timerLeft--;
+    renderRing();
+    if(timerLeft<=5){
+      document.getElementById('timer-ring-wrap').classList.add('pulse-danger');
+      document.getElementById('ring-fg').style.stroke='#ff3b3b';
+    }
+    if(timerLeft<=0){ clearInterval(timerInterval); onTimeUp(); }
+  },1000);
+}
+function stopTimer(){ clearInterval(timerInterval); }
+function renderRing(){
+  document.getElementById('ring-fg').style.strokeDashoffset=CIRC*(1-timerLeft/timerSec);
+  document.getElementById('timer-number').textContent=timerLeft;
+  if(timerLeft>5){
+    document.getElementById('ring-fg').style.stroke='var(--accent)';
+    document.getElementById('timer-ring-wrap').classList.remove('pulse-danger');
+  }
+}
+function onTimeUp(){ playBeep(); document.getElementById('time-overlay').style.display='flex'; }
+function dismissTimeUp(){ document.getElementById('time-overlay').style.display='none'; nextCard(false); }
+
+// ── Pause ──
+function togglePause(){
+  if(document.getElementById('game-screen').style.display!=='flex') return;
+  isPaused=!isPaused;
+  document.getElementById('pause-overlay').style.display=isPaused?'flex':'none';
+  if(!isPaused) document.getElementById('time-overlay').style.display='none';
+}
+
+// ── End game ──
+function endGame(){
+  stopTimer();
+  isPaused=false;
+  document.getElementById('pause-overlay').style.display='none';
+  document.getElementById('time-overlay').style.display='none';
+  showFinish(true);
+}
+
+// ── BGM ──
+let audioCtx=null,bgmPlaying=false,bgmOn=false,bgmSetupOn=false,bgmTimeout=null,bgmNote=0;
+const NOTES=[523.25,659.25,783.99,1046.50,783.99,659.25,523.25,440.00];
+function getCtx(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function startBGM(){ if(bgmPlaying) return; bgmPlaying=true; scheduleNote(); }
+function scheduleNote(){
+  if(!bgmPlaying) return;
+  const ctx=getCtx(),osc=ctx.createOscillator(),g=ctx.createGain();
+  osc.type='triangle'; osc.frequency.value=NOTES[bgmNote%NOTES.length]; bgmNote++;
+  g.gain.setValueAtTime(0.07,ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.22);
+  osc.connect(g); g.connect(ctx.destination);
+  osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.25);
+  bgmTimeout=setTimeout(scheduleNote,220);
+}
+function stopBGM(){ bgmPlaying=false; clearTimeout(bgmTimeout); }
+function playBeep(){
+  try{ const ctx=getCtx();
+    for(let i=0;i<3;i++){
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.frequency.value=220;
+      g.gain.setValueAtTime(0.3,ctx.currentTime+i*0.25);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+i*0.25+0.2);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime+i*0.25); o.stop(ctx.currentTime+i*0.25+0.22);
+    }
+  }catch(e){}
+}
+function playCorrect(){
+  try{ const ctx=getCtx();
+    [523,659,784].forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.frequency.value=f; o.type='sine';
+      g.gain.setValueAtTime(0.22,ctx.currentTime+i*0.1);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+i*0.1+0.25);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime+i*0.1); o.stop(ctx.currentTime+i*0.1+0.3);
+    });
+  }catch(e){}
+}
+function toggleBGM(){
+  bgmOn=!bgmOn;
+  if(bgmOn){ getCtx().resume(); startBGM(); } else stopBGM();
+  syncBGMUI();
+}
+function toggleBGMSetup(){
+  bgmSetupOn=!bgmSetupOn; bgmOn=bgmSetupOn;
+  if(bgmOn){ getCtx().resume(); startBGM(); } else stopBGM();
+  const b=document.getElementById('bgm-setup-btn');
+  b.textContent=bgmOn?'♪ BGM: ON（クリックでOFF）':'♪ BGM: OFF（クリックでON）';
+  b.className='bgm-toggle'+(bgmOn?' on':'');
+}
+function syncBGMUI(){
+  ['bgm-btn-header','bgm-btn-game'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.textContent=bgmOn?'♪ BGM ON':'♪ BGM OFF';
+    el.className='bgm-toggle'+(bgmOn?' on':'');
+  });
+}
+
+// ── CSV ──
+document.getElementById('csv-input').addEventListener('change',function(e){
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const parsed=parseCSV(ev.target.result);
+    if(!parsed.length){ showToast('CSVの形式を確認してください'); return; }
+    words=parsed; updateWordCount(); showToast(`✓ ${parsed.length}語 読み込みました！`);
+  };
+  r.readAsText(file,'UTF-8');
+});
+function parseCSV(text){
+  return text.trim().split('\n').map(l=>{
+    const c=l.split(',').map(s=>s.trim().replace(/^"|"$/g,''));
+    return c[0]?{answer:c[0],taboo1:c[1]||'',taboo2:c[2]||'',ja:c[3]||''}:null;
+  }).filter(Boolean);
+}
+function updateWordCount(){
+  document.getElementById('word-count').innerHTML=`<b>${words.length}</b> 語が登録されています`;
+}
+function addManual(){
+  const a=document.getElementById('m-answer').value.trim();
+  if(!a){ showToast('答えの単語を入力してください'); return; }
+  words.push({answer:a,taboo1:document.getElementById('m-taboo1').value.trim(),taboo2:document.getElementById('m-taboo2').value.trim(),ja:document.getElementById('m-ja').value.trim()});
+  ['m-answer','m-taboo1','m-taboo2','m-ja'].forEach(id=>document.getElementById(id).value='');
+  updateWordCount(); showToast(`"${a}" を追加しました`);
+}
+
+// ── Game flow ──
+function startGame(){
+  if(!words.length){ showToast('単語を登録してください'); return; }
+  timerSec=parseInt(document.getElementById('timer-range').value);
+  shuffled=shuffle([...words]); current=0; correct=0; isPaused=false;
+  showScreen('game');
+  document.getElementById('restart-btn').style.display='inline-block';
+  document.getElementById('bgm-btn-header').style.display='inline-block';
+  syncBGMUI();
+  if(bgmOn) startBGM();
+  renderCard();
+}
+
+function renderCard(){
+  const w=shuffled[current],total=shuffled.length;
+  document.getElementById('answer-word').textContent=w.answer.toUpperCase();
+  document.getElementById('answer-ja').textContent=w.ja||'';
+  document.getElementById('card-counter').textContent=`${current+1} / ${total}`;
+  document.getElementById('illus-emoji').textContent=getEmoji(w.answer);
+  document.getElementById('progress-fill').style.width=(current/total*100)+'%';
+  const tw=document.getElementById('taboo-words');
+  tw.innerHTML='';
+  [w.taboo1,w.taboo2].filter(Boolean).forEach(t=>{
+    const d=document.createElement('div');
+    d.className='taboo-tag'; d.textContent=t.toUpperCase(); tw.appendChild(d);
+  });
+  ['answer-word','answer-ja','illus-emoji'].forEach(id=>{
+    const el=document.getElementById(id); el.style.animation='none'; el.offsetHeight; el.style.animation='';
+  });
+  stopTimer(); startTimer();
+}
+
+function nextCard(wasCorrect){
+  if(isPaused) return;
+  stopTimer();
+  document.getElementById('time-overlay').style.display='none';
+  document.getElementById('timer-ring-wrap').classList.remove('pulse-danger');
+  document.getElementById('ring-fg').style.stroke='var(--accent)';
+  if(wasCorrect){ correct++; playCorrect(); }
+  current++;
+  if(current>=shuffled.length) showFinish(false);
+  else renderCard();
+}
+
+function showFinish(wasAborted){
+  stopBGM(); stopTimer();
+  showScreen('finish');
+  const answered=current; // cards attempted so far
+  const total=wasAborted?answered:shuffled.length;
+
+  document.getElementById('finish-title').textContent=wasAborted?'GAME ENDED':'GAME OVER!';
+  document.getElementById('score-correct').textContent=correct;
+  document.getElementById('score-total').textContent=total;
+  const pct=total>0?Math.round(correct/total*100):0;
+  document.getElementById('score-pct').textContent=pct+'%';
+
+  let msg='';
+  if(pct===100) msg='パーフェクト！🏆';
+  else if(pct>=80) msg='すごい！Great job! 🎉';
+  else if(pct>=60) msg='よくできました！Good job! 👍';
+  else if(pct>=40) msg='もう少し！Keep going! 💪';
+  else msg='練習しよう！Practice more! 📚';
+  document.getElementById('score-msg').textContent=`${total}問中 ${correct}問正解　${msg}`;
+  document.getElementById('progress-fill').style.width='100%';
+}
+
+function restartGame(){
+  shuffled=shuffle([...words]); current=0; correct=0; isPaused=false;
+  showScreen('game');
+  if(bgmOn) startBGM();
+  renderCard();
+}
+
+function goSetup(){
+  stopTimer(); stopBGM(); isPaused=false;
+  document.getElementById('pause-overlay').style.display='none';
+  document.getElementById('time-overlay').style.display='none';
+  showScreen('setup');
+  document.getElementById('restart-btn').style.display='none';
+  document.getElementById('bgm-btn-header').style.display='none';
+  document.getElementById('progress-fill').style.width='0%';
+  updateWordCount();
+}
+
+// ── Helpers ──
+function showScreen(n){
+  document.getElementById('setup-screen').style.display=n==='setup'?'flex':'none';
+  document.getElementById('game-screen').style.display=n==='game'?'flex':'none';
+  document.getElementById('finish-screen').style.display=n==='finish'?'flex':'none';
+}
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── Keyboard ──
+document.addEventListener('keydown',e=>{
+  const onGame=document.getElementById('game-screen').style.display==='flex';
+  const onPause=document.getElementById('pause-overlay').style.display==='flex';
+  const onTimeUp=document.getElementById('time-overlay').style.display==='flex';
+
+  if(onTimeUp){
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); dismissTimeUp(); }
+    return;
+  }
+  if(onPause){
+    if(e.key===' '){ e.preventDefault(); togglePause(); }
+    if(e.key==='Escape'){ e.preventDefault(); endGame(); }
+    return;
+  }
+  if(onGame){
+    if(e.key==='ArrowRight'||e.key==='Enter'){ e.preventDefault(); nextCard(true); }
+    if(e.key==='ArrowLeft'||e.key==='Backspace'){ e.preventDefault(); nextCard(false); }
+    if(e.key===' '){ e.preventDefault(); togglePause(); }
+    if(e.key==='Escape'){ e.preventDefault(); endGame(); }
+  }
+});
+
+// Init
+updateWordCount(); updateTimerDisplay();
+</script>
+</body>
+</html>
